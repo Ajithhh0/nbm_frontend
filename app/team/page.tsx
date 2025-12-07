@@ -105,7 +105,7 @@ export default function TeamPage() {
             {/* Description */}
             <p className="text-white/70 text-sm mt-3 text-center leading-relaxed">
               {member.desc}
-            </p>
+            </p>    
 
             {/* Social Icons */}
             <div className="flex justify-center gap-4 mt-5">
