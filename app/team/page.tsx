@@ -100,8 +100,8 @@ export default function TeamPage() {
             {/* Role */}
             <h3 className="text-center text-cyan-300 text-sm font-medium mt-1">
               {member.role}
-            </h3>
-
+            </h3> 
+ 
             {/* Description */}
             <p className="text-white/70 text-sm mt-3 text-center leading-relaxed">
               {member.desc}
