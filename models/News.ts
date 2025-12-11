@@ -6,6 +6,19 @@ const NewsSchema = new Schema(
       type: String,
       required: true,
     },
+    content: {
+      type: String,
+      required: true, // rich text / markdown
+    },
+    category: {
+      type: String,
+      enum: ["update", "research", "release", "announcement"],
+      default: "update",
+    },
+    slug: {
+      type: String,
+      required: false,
+    },
     date: {
       type: Date,
       default: Date.now,

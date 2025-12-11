@@ -1,48 +1,143 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+
 type NewsItem = {
   _id: string;
   title: string;
+  content: string;
+  category: string;
   date: string;
 };
 
-async function fetchNews(): Promise<NewsItem[]> {
-  const base =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    "http://localhost:3000"; 
+const PAGE_SIZE = 5;
 
-  const res = await fetch(`${base}/api/news`, { cache: "no-store" });
+const CATEGORIES = [
+  { value: "all", label: "All" },
+  { value: "update", label: "Updates" },
+  { value: "research", label: "Research" },
+  { value: "release", label: "Releases" },
+  { value: "announcement", label: "Announcements" },
+];
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch news");
+export default function NewsPage() {
+  const [items, setItems] = useState<NewsItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [category, setCategory] = useState("all");
+  const [loading, setLoading] = useState(false);
+
+  async function loadPage(reset = false, newCategory?: string) {
+    setLoading(true);
+    const currentCategory = newCategory ?? category;
+
+    const res = await fetch(
+      `/api/news?page=${reset ? 1 : page}&limit=${PAGE_SIZE}&category=${currentCategory}`
+    );
+    const data = await res.json();
+
+    if (reset) {
+      setItems(data.news);
+      setPage(2);
+    } else {
+      setItems((prev) => [...prev, ...data.news]);
+      setPage((p) => p + 1);
+    }
+
+    setHasMore(data.page < data.pages);
+    setLoading(false);
   }
 
-  const json = await res.json();
-  return json.news;
-}
+  useEffect(() => {
+    loadPage(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-export default async function NewsPage() {
-  const news = await fetchNews();
+  function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value;
+    setCategory(value);
+    setPage(1);
+    loadPage(true, value);
+  }
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-16">
-      <h1 className="text-3xl font-semibold text-white mb-6">Project News</h1>
+    <main className="max-w-4xl mx-auto px-6 py-16 text-white">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-semibold mb-2">Project News</h1>
+          <p className="text-sm text-white/60">
+            Updates about NeuroBioMark, software, datasets, and research.
+          </p>
+        </div>
 
-      {news.length === 0 && (
-        <p className="text-white/60 text-sm">No news available yet.</p>
-      )}
+        <div>
+          <label className="block text-xs mb-1 text-white/60">
+            Filter by category
+          </label>
+          <select
+            value={category}
+            onChange={handleCategoryChange}
+            className="px-3 py-2 rounded bg-black/60 border border-white/20 text-sm"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div className="space-y-4">
-        {news.map((item) => (
-          <div
+        {items.map((item) => (
+          <article
             key={item._id}
             className="border border-white/10 rounded-xl p-4 bg-white/5"
           >
-            <p className="text-white text-lg">{item.title}</p>
-            <p className="text-white/40 text-xs">
-              {new Date(item.date).toLocaleString()}
+            <Link href={`/news/item?id=${item._id}`}>
+              <h2 className="text-lg font-semibold hover:underline">
+                {item.title}
+              </h2>
+            </Link>
+            <p className="text-xs text-white/40 mt-1">
+              {new Date(item.date).toLocaleString()} ·{" "}
+              {
+                CATEGORIES.find((c) => c.value === item.category)?.label ??
+                "Update"
+              }
             </p>
-          </div>
+
+            <div className="mt-3 text-sm text-white/80 line-clamp-3">
+              <ReactMarkdown>{item.content}</ReactMarkdown>
+            </div>
+
+            <Link
+              href={`/news/item?id=${item._id}`}
+              className="inline-block mt-3 text-sm text-cyan-400 hover:text-cyan-300"
+            >
+              Read more →
+            </Link>
+          </article>
         ))}
+
+        {items.length === 0 && !loading && (
+          <p className="text-sm text-white/60">No news found.</p>
+        )}
       </div>
+
+      {hasMore && (
+        <div className="mt-8 flex justify-center">
+          <button
+            disabled={loading}
+            onClick={() => loadPage()}
+            className="px-4 py-2 rounded bg-white/10 border border-white/20 text-sm hover:bg-white/20 disabled:opacity-50"
+          >
+            {loading ? "Loading..." : "Load more"}
+          </button>
+        </div>
+      )}
     </main>
   );
 }
