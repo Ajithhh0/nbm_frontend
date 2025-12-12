@@ -8,7 +8,7 @@ type NewsItem = {
   title: string;
   content: string;
   category: string;
-  date: string;
+  createdAt: string;
 };
 
 const CATEGORIES = [
@@ -22,25 +22,32 @@ export default function NewsAdminPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // create
+  // CREATE
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("update");
   const [newContent, setNewContent] = useState("");
 
-  // edit
+  // EDIT
   const [editId, setEditId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState("update");
   const [editContent, setEditContent] = useState("");
 
-  async function loadNews() {
-    const res = await fetch("/api/news?limit=50");
-    const json = await res.json();
-    setNews(json.news);
-  }
-
+  /* =========================
+     LOAD NEWS (OPTION 1)
+     ========================= */
   useEffect(() => {
-    loadNews();
+    (async () => {
+      try {
+        const res = await fetch("/api/news?limit=50", {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        setNews(json.news || []);
+      } catch (err) {
+        console.error("Failed to load news", err);
+      }
+    })();
   }, []);
 
   async function handleCreate(e: React.FormEvent) {
@@ -63,13 +70,16 @@ export default function NewsAdminPage() {
     setNewCategory("update");
     setNewContent("");
 
-    loadNews();
+    // reload
+    const res = await fetch("/api/news?limit=50", { cache: "no-store" });
+    const json = await res.json();
+    setNews(json.news || []);
   }
 
   function startEdit(item: NewsItem) {
     setEditId(item._id);
     setEditTitle(item.title);
-    setEditCategory(item.category || "update");
+    setEditCategory(item.category);
     setEditContent(item.content);
   }
 
@@ -90,7 +100,10 @@ export default function NewsAdminPage() {
     setLoading(false);
 
     setEditId(null);
-    loadNews();
+
+    const res = await fetch("/api/news?limit=50", { cache: "no-store" });
+    const json = await res.json();
+    setNews(json.news || []);
   }
 
   async function handleDelete(id: string) {
@@ -105,7 +118,9 @@ export default function NewsAdminPage() {
     });
     setLoading(false);
 
-    loadNews();
+    const res = await fetch("/api/news?limit=50", { cache: "no-store" });
+    const json = await res.json();
+    setNews(json.news || []);
   }
 
   return (
@@ -144,21 +159,26 @@ export default function NewsAdminPage() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-1">Content (Markdown)</label>
+              <label className="block text-sm mb-1">
+                Content (Markdown)
+              </label>
               <textarea
                 className="w-full h-40 px-3 py-2 rounded bg-black/60 border border-white/20"
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
-                placeholder={`**Bold text**, [links](https://example.com), images: ![alt](url)`}
+                placeholder="**Bold**, [link](url), ![img](url)"
               />
             </div>
+
             <div>
               <p className="text-sm mb-1 text-white/60">Preview</p>
               <div className="w-full h-40 px-3 py-2 rounded bg-black/30 border border-white/10 overflow-auto text-sm prose prose-invert max-w-none">
                 {newContent ? (
                   <ReactMarkdown>{newContent}</ReactMarkdown>
                 ) : (
-                  <span className="text-white/40">Start typing to preview…</span>
+                  <span className="text-white/40">
+                    Start typing to preview…
+                  </span>
                 )}
               </div>
             </div>
@@ -174,7 +194,7 @@ export default function NewsAdminPage() {
         </form>
       </section>
 
-      {/* LIST + EDIT/DELETE */}
+      {/* LIST */}
       <section>
         <h2 className="text-2xl font-semibold mb-4">Existing News</h2>
 
@@ -232,18 +252,15 @@ export default function NewsAdminPage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <p className="text-lg font-medium">{item.title}</p>
-                      <p className="text-xs text-white/40">
-                        {new Date(item.date).toLocaleString()} ·{" "}
-                        {
-                          CATEGORIES.find((c) => c.value === item.category)
-                            ?.label
-                        }
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-lg font-medium">{item.title}</p>
+                  <p className="text-xs text-white/40">
+                    {new Date(item.createdAt).toLocaleString()} ·{" "}
+                    {
+                      CATEGORIES.find(
+                        (c) => c.value === item.category
+                      )?.label
+                    }
+                  </p>
 
                   <div className="mt-3 text-sm text-white/80 line-clamp-3">
                     <ReactMarkdown>{item.content}</ReactMarkdown>

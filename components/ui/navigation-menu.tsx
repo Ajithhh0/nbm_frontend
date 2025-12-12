@@ -18,7 +18,7 @@ const links = [
 type NewsItem = {
   _id: string;
   title: string;
-  date: string;
+  createdAt: string;
 };
 
 const LAST_SEEN_KEY = "nbm_news_last_seen";
@@ -32,11 +32,11 @@ export default function NavigationMenu() {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
 
-  // Fetch news from DB
+  // Fetch news
   useEffect(() => {
     async function fetchNews() {
       try {
-        const res = await fetch("/api/news", { cache: "no-store" });
+        const res = await fetch("/api/news?limit=5", { cache: "no-store" });
         const data = await res.json();
         const items: NewsItem[] = data.news || [];
 
@@ -47,18 +47,16 @@ export default function NavigationMenu() {
           return;
         }
 
-        const newestTime = Math.max(
-          ...items.map((item) => new Date(item.date).getTime())
-        );
-
-        const lastSeen = window.localStorage.getItem(LAST_SEEN_KEY);
+        const lastSeen = localStorage.getItem(LAST_SEEN_KEY);
 
         if (!lastSeen) {
-          setUnreadCount(items.length); // all unread
+          setUnreadCount(items.length);
         } else {
           const lastSeenTime = new Date(lastSeen).getTime();
           const count = items.filter(
-            (item) => new Date(item.date).getTime() > lastSeenTime
+            (item) =>
+              item.createdAt &&
+              new Date(item.createdAt).getTime() > lastSeenTime
           ).length;
           setUnreadCount(count);
         }
@@ -71,27 +69,15 @@ export default function NavigationMenu() {
   }, []);
 
   function toggleDropdown() {
-    setOpen((prev) => {
-      const next = !prev;
-
-      // Mark unread as read
-      if (next) {
-        window.localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
-        setUnreadCount(0);
-      }
-
-      return next;
-    });
+    setOpen((prev) => !prev);
   }
 
-  // Close dropdown on outside click
+  // Close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (!open) return;
-
       if (bellRef.current?.contains(e.target as Node)) return;
       if (dropdownRef.current?.contains(e.target as Node)) return;
-
       setOpen(false);
     }
 
@@ -100,21 +86,15 @@ export default function NavigationMenu() {
       document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  // Close dropdown when clicking View All
   function handleViewAllClick() {
+    localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
+    setUnreadCount(0);
     setOpen(false);
   }
 
   return (
-    <nav
-      className="
-        w-full sticky top-0 z-50
-        bg-black/10 backdrop-blur-lg
-        border-b border-white/5
-      "
-    >
+    <nav className="w-full sticky top-0 z-50 bg-black/10 backdrop-blur-lg border-b border-white/5">
       <div className="max-w-7xl mx-auto px-10 h-20 flex items-center justify-between">
-
         {/* LOGO */}
         <Link href="/" className="flex items-center">
           <Image
@@ -136,21 +116,13 @@ export default function NavigationMenu() {
                   <motion.div
                     layoutId="pill"
                     className="absolute inset-0 rounded-full bg-neutral-700"
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
 
                 <Link
                   href={link.href}
-                  className="
-                    relative z-10 px-5 py-2
-                    text-sm font-medium text-white/80
-                    hover:text-white transition-colors
-                  "
+                  className="relative z-10 px-5 py-2 text-sm font-medium text-white/80 hover:text-white"
                 >
                   {link.name}
                 </Link>
@@ -158,32 +130,22 @@ export default function NavigationMenu() {
             );
           })}
 
-          {/* BELL ICON */}
+          {/* BELL */}
           <div className="relative">
             <button
               ref={bellRef}
               onClick={toggleDropdown}
-              className="relative p-2 rounded-full hover:bg-white/10 transition"
+              className="relative p-2 rounded-full hover:bg-white/10"
             >
-              <Bell className="w-6 h-6 text-white/80 hover:text-white" />
+              <Bell className="w-6 h-6 text-white/80" />
 
-              {/* UNREAD COUNT BADGE */}
               {unreadCount > 0 && (
-                <span
-                  className="
-                    absolute -top-1 -right-1
-                    h-5 w-5 rounded-full
-                    bg-red-500 text-white text-xs
-                    flex items-center justify-center
-                    border border-black
-                  "
-                >
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
             </button>
 
-            {/* DROPDOWN */}
             <AnimatePresence>
               {open && (
                 <motion.div
@@ -192,13 +154,7 @@ export default function NavigationMenu() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.18 }}
-                  className="
-                    absolute right-0 mt-3 w-72
-                    bg-black/70 backdrop-blur-xl
-                    border border-white/10 rounded-xl
-                    p-4 shadow-xl
-                    z-50
-                  "
+                  className="absolute right-0 mt-3 w-72 bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-xl z-50"
                 >
                   <h3 className="text-white font-semibold mb-3">
                     Latest News
@@ -213,9 +169,13 @@ export default function NavigationMenu() {
                           key={item._id}
                           className="p-2 rounded-lg bg-white/5"
                         >
-                          <p className="text-white/90 text-sm">{item.title}</p>
+                          <p className="text-white/90 text-sm">
+                            {item.title}
+                          </p>
                           <p className="text-white/40 text-xs">
-                            {new Date(item.date).toLocaleString()}
+                            {item.createdAt
+                              ? new Date(item.createdAt).toLocaleString()
+                              : "—"}
                           </p>
                         </div>
                       ))

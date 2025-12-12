@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/mongodb";
-import { News } from "@/models/News";
+import  News from "@/models/News";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 

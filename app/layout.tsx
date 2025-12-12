@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavigationMenu from "../components/ui/navigation-menu";
+import ClientLayout from "./client-layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,32 +20,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-
-        {/* GLOBAL VIDEO BACKGROUND */}
-        <div className="video-bg">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-          >
-            <source src="/brain.mp4" type="video/mp4" />
-
-          </video>
-        </div>
-
-        {/* NAVBAR */}
-        <NavigationMenu />
-
-        {/* PAGE CONTENT */}
-        {children}
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
