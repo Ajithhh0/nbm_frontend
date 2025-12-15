@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Bell } from "lucide-react";
 
 const links = [
@@ -25,6 +25,7 @@ const LAST_SEEN_KEY = "nbm_news_last_seen";
 
 export default function NavigationMenu() {
   const pathname = usePathname();
+
   const [open, setOpen] = useState(false);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -32,7 +33,36 @@ export default function NavigationMenu() {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
 
-  // Fetch news
+  /* ---------- NAV PILL LOGIC ---------- */
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const [pill, setPill] = useState({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  });
+
+  useLayoutEffect(() => {
+    const container = navRef.current;
+    if (!container) return;
+
+    const activeLink = container.querySelector(
+      `[data-active="true"]`
+    ) as HTMLElement | null;
+
+    if (!activeLink) return;
+
+    const parentRect = container.getBoundingClientRect();
+    const rect = activeLink.getBoundingClientRect();
+
+    setPill({
+      left: rect.left - parentRect.left,
+      width: rect.width,
+      opacity: 1,
+    });
+  }, [pathname]);
+  /* ----------------------------------- */
+
+  /* ---------- FETCH NEWS ---------- */
   useEffect(() => {
     async function fetchNews() {
       try {
@@ -42,23 +72,18 @@ export default function NavigationMenu() {
 
         setNews(items);
 
-        if (items.length === 0) {
-          setUnreadCount(0);
-          return;
-        }
-
         const lastSeen = localStorage.getItem(LAST_SEEN_KEY);
-
         if (!lastSeen) {
           setUnreadCount(items.length);
         } else {
           const lastSeenTime = new Date(lastSeen).getTime();
-          const count = items.filter(
-            (item) =>
-              item.createdAt &&
-              new Date(item.createdAt).getTime() > lastSeenTime
-          ).length;
-          setUnreadCount(count);
+          setUnreadCount(
+            items.filter(
+              (item) =>
+                item.createdAt &&
+                new Date(item.createdAt).getTime() > lastSeenTime
+            ).length
+          );
         }
       } catch (err) {
         console.error("Failed to load news", err);
@@ -67,12 +92,9 @@ export default function NavigationMenu() {
 
     fetchNews();
   }, []);
+  /* -------------------------------- */
 
-  function toggleDropdown() {
-    setOpen((prev) => !prev);
-  }
-
-  // Close on outside click
+  /* ---------- OUTSIDE CLICK ---------- */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (!open) return;
@@ -85,6 +107,7 @@ export default function NavigationMenu() {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
+  /* ---------------------------------- */
 
   function handleViewAllClick() {
     localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
@@ -106,39 +129,51 @@ export default function NavigationMenu() {
           />
         </Link>
 
+        {/* NAV + BELL */}
         <div className="relative flex items-center gap-10">
-          {links.map((link) => {
-            const active = pathname === link.href;
+          {/* NAV LINKS */}
+          <div ref={navRef} className="relative flex items-center gap-2">
+            {/* MOVING PILL */}
+            <motion.div
+              className="absolute top-1/2 -translate-y-1/2 h-10 rounded-full bg-white/10 backdrop-blur-md"
+              animate={{
+                x: pill.left,
+                width: pill.width,
+                opacity: pill.opacity,
+              }}
+              transition={{ type: "spring", stiffness: 850, damping: 42, mass: 0.35 }}
+              style={{ left: 0 }}
+            />
 
-            return (
-              <div key={link.name} className="relative">
-                {active && (
-                  <motion.div
-                    layoutId="pill"
-                    className="absolute inset-0 rounded-full bg-neutral-700"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
+            {links.map((link) => {
+              const active = pathname === link.href;
 
-                <Link
-                  href={link.href}
-                  className="relative z-10 px-5 py-2 text-sm font-medium text-white/80 hover:text-white"
-                >
-                  {link.name}
-                </Link>
-              </div>
-            );
-          })}
+              return (
+                <motion.div key={link.name} whileHover={{ scale: 1.06 }}>
+                  <Link
+                    href={link.href}
+                    data-active={active}
+                    className={`relative z-10 px-5 py-2 text-sm font-medium transition-colors ${
+                      active
+                        ? "text-white"
+                        : "text-white/80 hover:text-white"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
 
           {/* BELL */}
           <div className="relative">
             <button
               ref={bellRef}
-              onClick={toggleDropdown}
+              onClick={() => setOpen((p) => !p)}
               className="relative p-2 rounded-full hover:bg-white/10"
             >
               <Bell className="w-6 h-6 text-white/80" />
-
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
                   {unreadCount}
@@ -173,9 +208,7 @@ export default function NavigationMenu() {
                             {item.title}
                           </p>
                           <p className="text-white/40 text-xs">
-                            {item.createdAt
-                              ? new Date(item.createdAt).toLocaleString()
-                              : "—"}
+                            {new Date(item.createdAt).toLocaleString()}
                           </p>
                         </div>
                       ))

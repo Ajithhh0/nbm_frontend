@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ReactNode } from "react";
 import {
   Database,
   Layers,
@@ -14,454 +13,358 @@ import {
   Activity,
 } from "lucide-react";
 
-// Mock Data
+/* -------------------- DATA -------------------- */
 const accuracyData = [0.62, 0.71, 0.78, 0.82, 0.86];
 const lossData = [1.3, 0.98, 0.72, 0.55, 0.43];
 
-export default function ResearchPage() {
-  const [activeImage, setActiveImage] = useState<number | null>(null);
+const tissueImages = [
+  { src: "/research/10.jpg", label: "TDP-43, BA44 – Control" },
+  { src: "/research/24.jpg", label: "TDP-43, BA46 – Discordant" },
+  { src: "/research/104.jpg", label: "TDP-43, BA44 – Concordant" },
+];
 
-  const tissueImages = [
-    { src: "/research/10.jpg", label: "TDP-43, BA44 – Control" },
-    { src: "/research/24.jpg", label: "TDP-43, BA46 – Discordant" },
-    { src: "/research/104.jpg", label: "TDP-43, BA44 – Concordant" },
+/* -------------------- PAGE -------------------- */
+export default function ResearchPage() {
+  const slides = [
+    { id: "overview", view: <OverviewSlide /> },
+    { id: "pipeline", view: <PipelineSlide /> },
+    { id: "charts", view: <ChartsSlide /> },
+    { id: "tissue", view: <TissueSlide /> },
+    { id: "model", view: <ModelSlide /> },
   ];
 
+  const [index, setIndex] = useState(0);
+
+  const next = () => setIndex((i) => Math.min(i + 1, slides.length - 1));
+  const prev = () => setIndex((i) => Math.max(i - 1, 0));
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
-    <div className="h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth">
-      {/* SECTION 1 – Overview */}
-      <SectionWrapper>
-        <div className="max-w-6xl mx-auto w-full px-6 pt-20 pb-10">
-          <motion.h1
-            initial={{ opacity: 0, y: -15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl font-bold text-white text-center mb-4"
-          >
-            Research Overview
-          </motion.h1>
+    <div className="relative h-screen overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={slides[index].id}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+          className="absolute inset-0"
+        >
+          {slides[index].view}
+        </motion.div>
+      </AnimatePresence>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.6 }}
-            className="text-center text-white/70 max-w-2xl mx-auto mb-10"
-          >
-            A modern visualization of the NeuroBioMark study pipeline, dataset,
-            tissue samples, and model performance.
-          </motion.p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricCard
-              title="Total Images"
-              value="190"
-              detail="Original TDP-43 histopathology tiles."
-              icon={<Database className="text-cyan-400" size={28} />}
-            />
-            <MetricCard
-              title="Output Classes"
-              value="3"
-              detail="Control, Discordant, Concordant."
-              icon={<Layers className="text-cyan-400" size={28} />}
-            />
-            <MetricCard
-              title="Augmentations"
-              value="15"
-              detail="Geometric & photometric transforms."
-              icon={<FlaskConical className="text-cyan-400" size={28} />}
-            />
-            <MetricCard
-              title="Cross-Validation Folds"
-              value="5"
-              detail="Patient-level Group-CV."
-              icon={<Scan className="text-cyan-400" size={28} />}
-            />
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* SECTION 2 – Pipeline */}
-      <SectionWrapper>
-        <div className="max-w-6xl mx-auto w-full px-6 pt-20 pb-10 space-y-10">
-          <SectionTitle
-            icon={<Brain className="text-cyan-400" size={30} />}
-            title="Research Pipeline"
-            subtitle="From raw tissue images to explainable predictions."
-          />
-
-          <ResearchPipeline />
-        </div>
-      </SectionWrapper>
-
-      {/* SECTION 3 – Charts */}
-      <SectionWrapper>
-        <div className="max-w-6xl mx-auto w-full px-6 pt-20 pb-10 space-y-8">
-          <SectionTitle
-            icon={<BarChart3 className="text-cyan-400" size={30} />}
-            title="Model Performance"
-            subtitle="Training dynamics demonstrating model stability and improvement."
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <AnimatedLineChart
-              title="Accuracy per Epoch"
-              data={accuracyData}
-              yLabel="Accuracy"
-            />
-            <AnimatedLineChart
-              title="Loss per Epoch"
-              data={lossData}
-              yLabel="Loss"
-            />
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* SECTION 4 – Tissue Samples */}
-      <SectionWrapper>
-        <div className="max-w-6xl mx-auto w-full px-6 pt-20 pb-10 space-y-8">
-          <SectionTitle
-            icon={<ImageIcon className="text-cyan-400" size={30} />}
-            title="TDP-43 Tissue Examples"
-            subtitle="Representative regions from ALS and control cohorts."
-          />
-
-          <TissueGallery
-            images={tissueImages}
-            activeImage={activeImage}
-            setActiveImage={setActiveImage}
-          />
-        </div>
-      </SectionWrapper>
-
-      {/* SECTION 5 – Model Pipeline Visualization */}
-      <SectionWrapper>
-        <div className="max-w-6xl mx-auto w-full px-6 pt-20 pb-10 space-y-8">
-          <SectionTitle
-            icon={<Activity className="text-cyan-400" size={30} />}
-            title="Model Pipeline & Explainability"
-            subtitle="From image tiles to interpretable heatmaps."
-          />
-
-          <ModelPipelineViz />
-        </div>
-      </SectionWrapper>
+      <SlideControls
+        index={index}
+        total={slides.length}
+        next={next}
+        prev={prev}
+      />
     </div>
   );
 }
 
-//
-// SECTION WRAPPER (with gradient overlay)
-//
+/* -------------------- CONTROLS -------------------- */
+function SlideControls({
+  index,
+  total,
+  next,
+  prev,
+}: {
+  index: number;
+  total: number;
+  next: () => void;
+  prev: () => void;
+}) {
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 z-50">
+      <button
+        onClick={prev}
+        disabled={index === 0}
+        className="text-xs text-white/70 hover:text-white disabled:opacity-30"
+      >
+        ← Previous
+      </button>
+
+      <div className="flex gap-2">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-1.5 w-6 rounded-full transition ${
+              i === index ? "bg-cyan-400" : "bg-white/30"
+            }`}
+          />
+        ))}
+      </div>
+
+      <button
+        onClick={next}
+        disabled={index === total - 1}
+        className="text-xs text-white/70 hover:text-white disabled:opacity-30"
+      >
+        Next →
+      </button>
+    </div>
+  );
+}
+
+/* -------------------- WRAPPER -------------------- */
 function SectionWrapper({ children }: { children: ReactNode }) {
   return (
-    <section className="snap-start min-h-screen flex items-center py-28 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60 pointer-events-none" />
-      <div className="relative z-10 w-full">{children}</div>
+    <section className="min-h-screen flex items-center justify-center px-6">
+      <div className="relative z-10 max-w-6xl w-full">{children}</div>
     </section>
   );
 }
 
-//
-// METRIC CARD
-//
-function MetricCard({
-  title,
-  value,
-  detail,
-  icon,
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  icon: ReactNode;
-}) {
+/* -------------------- SLIDES -------------------- */
+function OverviewSlide() {
   return (
-    <motion.div
-      whileHover={{ scale: 1.05, y: -4 }}
-      transition={{ type: "spring", stiffness: 220, damping: 18 }}
-      className="group bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-md"
-    >
-      <div className="flex items-center justify-between mb-2">
-        {icon}
-        <div className="text-2xl font-semibold text-white">{value}</div>
+    <SectionWrapper>
+      <div className="space-y-10 text-center">
+        <h1 className="text-5xl font-bold text-white">Research Overview</h1>
+        <p className="text-white/70 max-w-2xl mx-auto">
+          End-to-end visualization of the NeuroBioMark ALS histopathology pipeline.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard title="Images" value="190" icon={<Database />} />
+          <MetricCard title="Classes" value="3" icon={<Layers />} />
+          <MetricCard title="Augmentations" value="15" icon={<FlaskConical />} />
+          <MetricCard title="CV Folds" value="5" icon={<Scan />} />
+        </div>
       </div>
-
-      <p className="text-xs text-white/70">{title}</p>
-
-      <p className="text-xs text-white/60 mt-1 group-hover:text-white transition">
-        {detail}
-      </p>
-    </motion.div>
+    </SectionWrapper>
   );
 }
 
-//
-// SECTION TITLE
-//
-function SectionTitle({
-  icon,
-  title,
-  subtitle,
-}: {
-  icon: ReactNode;
-  title: string;
-  subtitle?: string;
-}) {
+function PipelineSlide() {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        {icon}
-        <h2 className="text-2xl md:text-3xl font-semibold text-white">
-          {title}
-        </h2>
-      </div>
-      {subtitle && (
-        <p className="text-white/70 text-sm md:text-base">{subtitle}</p>
-      )}
-    </div>
+    <SectionWrapper>
+      <SectionTitle icon={<Brain />} title="Research Pipeline" />
+      <ResearchPipeline />
+    </SectionWrapper>
   );
 }
 
-//
-// PIPELINE VISUALIZATION
-//
-const pipelineSteps = [
-  "Dataset",
-  "Augmentation",
-  "Preprocessing",
-  "Model",
-  "Explainability",
-  "Results",
-];
-
-function ResearchPipeline() {
+function ChartsSlide() {
   return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/15 rounded-2xl p-8 overflow-hidden">
-      {/* Glow bar */}
-      <motion.div
-        className="absolute top-1/2 -translate-y-1/2 h-1 w-[80%] left-[10%] bg-gradient-to-r from-cyan-400/40 via-cyan-300/70 to-transparent rounded-full"
-      />
-
-      {/* Moving node */}
-      <motion.div
-        className="absolute h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.9)] top-1/2 -translate-y-1/2"
-        initial={{ left: "10%" }}
-        animate={{ left: ["10%", "90%"] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-      />
-
-      {/* Nodes */}
-      <div className="relative flex justify-between items-center w-full">
-        {pipelineSteps.map((step, idx) => (
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.08, duration: 0.5 }}
-            className="flex flex-col items-center gap-2"
-          >
-            <div className="h-10 w-10 rounded-full border border-cyan-300/60 bg-black/40 flex items-center justify-center text-xs text-cyan-100">
-              {idx + 1}
-            </div>
-            <p className="text-xs text-white/80">{step}</p>
-          </motion.div>
-        ))}
+    <SectionWrapper>
+      <SectionTitle icon={<BarChart3 />} title="Model Performance" />
+      <div className="grid md:grid-cols-2 gap-8 mt-8">
+        <AnimatedLineChart title="Accuracy" data={accuracyData} />
+        <AnimatedLineChart title="Loss" data={lossData} />
       </div>
-    </div>
+    </SectionWrapper>
   );
 }
 
-//
-// ANIMATED LINE CHART
-//
-function AnimatedLineChart({
-  title,
-  data,
-  yLabel,
-}: {
-  title: string;
-  data: number[];
-  yLabel: string;
-}) {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
+/* -------------------- TISSUE SLIDE (WITH LIGHTBOX) -------------------- */
+function TissueSlide() {
+  const [active, setActive] = useState<number | null>(null);
 
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * 100;
-    const y = 100 - ((value - min) / (max - min)) * 80 - 10;
-    return `${x},${y}`;
-  });
-
-  const pathData = `M ${points.join(" L ")}`;
+  // ESC to close
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActive(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
-    <div className="bg-white/5 border border-white/15 rounded-2xl p-5 backdrop-blur-xl shadow-md">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <span className="text-[11px] text-white/60">{yLabel}</span>
-      </div>
+    <SectionWrapper>
+      <SectionTitle icon={<ImageIcon />} title="TDP-43 Tissue Samples" />
 
-      <div className="relative h-48">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {[20, 40, 60, 80].map((y) => (
-            <line
-              key={y}
-              x1="0"
-              y1={y}
-              x2="100"
-              y2={y}
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth={0.4}
-            />
-          ))}
-
-          <motion.path
-            d={pathData}
-            fill="none"
-            stroke="rgba(45,212,191,0.9)"
-            strokeWidth={1.5}
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-          />
-
-          {points.map((p, i) => {
-            const [x, y] = p.split(",");
-            return (
-              <motion.circle
-                key={i}
-                cx={x}
-                cy={y}
-                r={1.3}
-                fill="rgba(34,211,238,0.9)"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-              />
-            );
-          })}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-//
-// TISSUE GALLERY
-//
-function TissueGallery({
-  images,
-  activeImage,
-  setActiveImage,
-}: {
-  images: { src: string; label: string }[];
-  activeImage: number | null;
-  setActiveImage: (i: number | null) => void;
-}) {
-  return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {images.map((img, idx) => (
+      {/* GRID */}
+      <div className="grid sm:grid-cols-3 gap-6 mt-8">
+        {tissueImages.map((img, i) => (
           <motion.button
-            key={idx}
+            key={img.src}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => setActiveImage(idx)}
-            className="rounded-xl overflow-hidden bg-white/5 border border-white/20 shadow-sm relative"
+            onClick={() => setActive(i)}
+            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden text-left"
           >
             <div
-              className="h-32 md:h-40 w-full bg-cover bg-center"
+              className="h-40 bg-cover bg-center"
               style={{ backgroundImage: `url(${img.src})` }}
             />
-            <p className="text-xs text-white/75 px-3 py-2">{img.label}</p>
+            <p className="text-xs text-white/80 p-2">{img.label}</p>
           </motion.button>
         ))}
       </div>
 
+      {/* MODAL */}
       <AnimatePresence>
-        {activeImage !== null && (
+        {active !== null && (
           <motion.div
-            className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[200]"
+            className="fixed inset-0 z-[200] flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setActiveImage(null)}
+            onClick={() => setActive(null)}
           >
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
             <motion.div
-              className="bg-black/80 border border-white/20 rounded-2xl p-4 max-w-3xl w-[90%]"
+              className="relative max-w-5xl w-[90%] rounded-2xl overflow-hidden border border-white/20 bg-white/5 backdrop-blur-xl"
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ duration: 0.25 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div
-                className="w-full h-[60vh] bg-cover bg-center rounded-xl"
-                style={{
-                  backgroundImage: `url(${images[activeImage].src})`,
-                }}
+              <img
+                src={tissueImages[active].src}
+                alt={tissueImages[active].label}
+                className="w-full max-h-[75vh] object-contain"
               />
-              <p className="mt-3 text-sm text-white/80">
-                {images[activeImage].label}
-              </p>
-              <button
-                onClick={() => setActiveImage(null)}
-                className="mt-3 text-xs text-white/70 hover:text-white"
-              >
-                Close
-              </button>
+              <div className="px-4 py-3 text-sm text-white/85">
+                {tissueImages[active].label}
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </SectionWrapper>
   );
 }
 
-//
-// MODEL PIPELINE
-//
+function ModelSlide() {
+  return (
+    <SectionWrapper>
+      <SectionTitle icon={<Activity />} title="Model & Explainability" />
+      <ModelPipelineViz />
+    </SectionWrapper>
+  );
+}
+
+/* -------------------- COMPONENTS -------------------- */
+function MetricCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-cyan-400">{icon}</div>
+        <div className="text-2xl text-white">{value}</div>
+      </div>
+      <p className="text-xs text-white/70 mt-2">{title}</p>
+    </div>
+  );
+}
+
+function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-3 text-white text-3xl font-semibold">
+      <span className="text-cyan-400">{icon}</span>
+      {title}
+    </div>
+  );
+}
+
+function ResearchPipeline() {
+  const steps = [
+    "Dataset",
+    "Augmentation",
+    "Preprocessing",
+    "Model",
+    "Explainability",
+    "Results",
+  ];
+
+  return (
+    <div className="relative mt-14">
+      <div className="absolute top-6 left-0 right-0 h-px bg-white/20" />
+      <motion.div
+        className="absolute top-[22px] h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.9)]"
+        initial={{ left: "0%" }}
+        animate={{ left: "100%" }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+
+      <div className="relative flex justify-between">
+        {steps.map((step, i) => (
+          <div key={step} className="flex flex-col items-center gap-3">
+            <div className="h-12 w-12 rounded-full border border-cyan-400 bg-white/10 backdrop-blur-xl flex items-center justify-center text-white">
+              {i + 1}
+            </div>
+            <p className="text-xs text-white/80 text-center">{step}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnimatedLineChart({
+  title,
+  data,
+}: {
+  title: string;
+  data: number[];
+}) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 100 - ((v - min) / (max - min)) * 80 - 10;
+    return `${x},${y}`;
+  });
+
+  return (
+    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+      <h3 className="text-sm text-white mb-2">{title}</h3>
+      <svg viewBox="0 0 100 100" className="w-full h-40">
+        <motion.polyline
+          points={points.join(" ")}
+          fill="none"
+          stroke="rgb(34,211,238)"
+          strokeWidth="1.5"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 1.2 }}
+        />
+      </svg>
+    </div>
+  );
+}
+
 function ModelPipelineViz() {
   const stages = [
     "Input Tile",
     "Feature Extractor",
-    "Attention / CAM",
+    "Attention",
     "Classifier",
-    "ALS Class Output",
+    "Output",
   ];
 
   return (
-    <div className="bg-white/5 border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        {stages.map((stage, idx) => (
-          <motion.div
-            key={stage}
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1, duration: 0.4 }}
-            className="flex flex-col items-center"
-          >
-            <div className="w-32 h-16 rounded-xl border border-cyan-400/60 bg-black/40 flex items-center justify-center text-[11px] text-center text-white/85 shadow-[0_0_18px_rgba(34,211,238,0.15)]">
-              {stage}
-            </div>
-
-            {idx < stages.length - 1 && (
-              <motion.div
-                className="hidden md:block h-px w-14 bg-gradient-to-r from-cyan-400/60 to-transparent mt-2"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-              />
-            )}
-          </motion.div>
-        ))}
-      </div>
-
-      <p className="mt-6 text-xs text-white/75 leading-relaxed">
-        Tiles from TDP-43–stained slides are processed by a deep CNN backbone.
-        Attention mechanisms (e.g., Grad-CAM) highlight regions that drive
-        predictions, which are compared against annotated ROIs to assess the
-        Focus Relevance Score.
-      </p>
+    <div className="flex justify-between mt-10">
+      {stages.map((s) => (
+        <div
+          key={s}
+          className="w-32 h-16 border border-cyan-400 bg-white/10 backdrop-blur-xl rounded-xl flex items-center justify-center text-xs text-white"
+        >
+          {s}
+        </div>
+      ))}
     </div>
   );
 }
