@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Menu, X } from "lucide-react";
 
 const links = [
   { name: "Home", href: "/" },
@@ -27,21 +27,20 @@ export default function NavigationMenu() {
   const pathname = usePathname();
 
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const bellRef = useRef<HTMLButtonElement | null>(null);
 
-  /* ---------- NAV PILL LOGIC ---------- */
+  /* ---------- NAV PILL (DESKTOP ONLY) ---------- */
   const navRef = useRef<HTMLDivElement | null>(null);
-  const [pill, setPill] = useState({
-    left: 0,
-    width: 0,
-    opacity: 0,
-  });
+  const [pill, setPill] = useState({ left: 0, width: 0, opacity: 0 });
 
   useLayoutEffect(() => {
+    if (window.innerWidth < 768) return;
+
     const container = navRef.current;
     if (!container) return;
 
@@ -60,7 +59,7 @@ export default function NavigationMenu() {
       opacity: 1,
     });
   }, [pathname]);
-  /* ----------------------------------- */
+  /* ------------------------------------------- */
 
   /* ---------- FETCH NEWS ---------- */
   useEffect(() => {
@@ -92,9 +91,8 @@ export default function NavigationMenu() {
 
     fetchNews();
   }, []);
-  /* -------------------------------- */
 
-  /* ---------- OUTSIDE CLICK ---------- */
+  /* ---------- OUTSIDE CLICK (BELL) ---------- */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (!open) return;
@@ -107,7 +105,6 @@ export default function NavigationMenu() {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
-  /* ---------------------------------- */
 
   function handleViewAllClick() {
     localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
@@ -117,7 +114,7 @@ export default function NavigationMenu() {
 
   return (
     <nav className="w-full sticky top-0 z-50 bg-black/10 backdrop-blur-lg border-b border-white/5">
-      <div className="max-w-7xl mx-auto px-10 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 h-20 flex items-center justify-between">
         {/* LOGO */}
         <Link href="/" className="flex items-center">
           <Image
@@ -129,31 +126,32 @@ export default function NavigationMenu() {
           />
         </Link>
 
-        {/* NAV + BELL */}
-        <div className="relative flex items-center gap-10">
-          {/* NAV LINKS */}
+        {/* DESKTOP NAV */}
+        <div className="hidden md:flex items-center gap-10">
           <div ref={navRef} className="relative flex items-center gap-2">
-            {/* MOVING PILL */}
             <motion.div
-              className="absolute top-1/2 -translate-y-1/2 h-10 rounded-full bg-white/10 backdrop-blur-md"
+              className="absolute top-1/2 -translate-y-1/2 h-10 rounded-full bg-white/10"
               animate={{
                 x: pill.left,
                 width: pill.width,
                 opacity: pill.opacity,
               }}
-              transition={{ type: "spring", stiffness: 850, damping: 42, mass: 0.35 }}
-              style={{ left: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 850,
+                damping: 42,
+                mass: 0.35,
+              }}
             />
 
             {links.map((link) => {
               const active = pathname === link.href;
-
               return (
                 <motion.div key={link.name} whileHover={{ scale: 1.06 }}>
                   <Link
                     href={link.href}
                     data-active={active}
-                    className={`relative z-10 px-5 py-2 text-sm font-medium transition-colors ${
+                    className={`relative z-10 px-5 py-2 text-sm font-medium ${
                       active
                         ? "text-white"
                         : "text-white/80 hover:text-white"
@@ -167,69 +165,135 @@ export default function NavigationMenu() {
           </div>
 
           {/* BELL */}
-          <div className="relative">
-            <button
-              ref={bellRef}
-              onClick={() => setOpen((p) => !p)}
-              className="relative p-2 rounded-full hover:bg-white/10"
-            >
-              <Bell className="w-6 h-6 text-white/80" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
+          <BellButton
+            bellRef={bellRef}
+            dropdownRef={dropdownRef}
+            open={open}
+            setOpen={setOpen}
+            unreadCount={unreadCount}
+            news={news}
+            handleViewAllClick={handleViewAllClick}
+          />
+        </div>
 
-            <AnimatePresence>
-              {open && (
-                <motion.div
-                  ref={dropdownRef}
-                  initial={{ opacity: 0, y: -12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute right-0 mt-3 w-72 bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-xl z-50"
-                >
-                  <h3 className="text-white font-semibold mb-3">
-                    Latest News
-                  </h3>
+        {/* MOBILE ACTIONS */}
+        <div className="md:hidden flex items-center gap-4">
+          <BellButton
+            bellRef={bellRef}
+            dropdownRef={dropdownRef}
+            open={open}
+            setOpen={setOpen}
+            unreadCount={unreadCount}
+            news={news}
+            handleViewAllClick={handleViewAllClick}
+          />
 
-                  <div className="flex flex-col gap-3 max-h-60 overflow-y-auto">
-                    {news.length === 0 ? (
-                      <p className="text-white/50 text-sm">No news yet.</p>
-                    ) : (
-                      news.map((item) => (
-                        <div
-                          key={item._id}
-                          className="p-2 rounded-lg bg-white/5"
-                        >
-                          <p className="text-white/90 text-sm">
-                            {item.title}
-                          </p>
-                          <p className="text-white/40 text-xs">
-                            {new Date(item.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="border-t border-white/10 mt-3 pt-3 text-right">
-                    <Link
-                      href="/news"
-                      onClick={handleViewAllClick}
-                      className="text-white/60 text-sm hover:text-white"
-                    >
-                      View all →
-                    </Link>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <button
+            onClick={() => setMobileOpen((p) => !p)}
+            className="p-2 rounded-lg hover:bg-white/10 text-white"
+          >
+            {mobileOpen ? <X className="text-white" /> : <Menu className="text-white" />}
+          </button>
         </div>
       </div>
+
+      {/* MOBILE MENU */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="md:hidden bg-black/80 backdrop-blur-xl border-t border-white/10"
+          >
+            <div className="flex flex-col p-4 gap-2">
+              {links.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`px-4 py-3 rounded-lg text-sm ${
+                    pathname === link.href
+                      ? "bg-white/10 text-white"
+                      : "text-white/80 hover:bg-white/10"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
+  );
+}
+
+/* ---------- BELL COMPONENT ---------- */
+function BellButton({
+  bellRef,
+  dropdownRef,
+  open,
+  setOpen,
+  unreadCount,
+  news,
+  handleViewAllClick,
+}: any) {
+  return (
+    <div className="relative">
+      <button
+        ref={bellRef}
+        onClick={() => setOpen((p: boolean) => !p)}
+        className="relative p-2 rounded-full hover:bg-white/10"
+      >
+        <Bell className="w-6 h-6 text-white/80" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+            {unreadCount}
+          </span>
+        )}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            ref={dropdownRef}
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.18 }}
+            className="absolute right-0 mt-3 w-72 bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-xl z-50"
+          >
+            <h3 className="text-white font-semibold mb-3">Latest News</h3>
+
+            <div className="flex flex-col gap-3 max-h-60 overflow-y-auto">
+              {news.length === 0 ? (
+                <p className="text-white/50 text-sm">No news yet.</p>
+              ) : (
+                news.map((item: any) => (
+                  <div key={item._id} className="p-2 rounded-lg bg-white/5">
+                    <p className="text-white/90 text-sm">{item.title}</p>
+                    <p className="text-white/40 text-xs">
+                      {new Date(item.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="border-t border-white/10 mt-3 pt-3 text-right">
+              <Link
+                href="/news"
+                onClick={handleViewAllClick}
+                className="text-white/60 text-sm hover:text-white"
+              >
+                View all →
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

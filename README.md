@@ -39,3 +39,13 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ## Access Admin Panel to update news  
 
 http://localhost:3000/admin-nbm-x492d/news 
+
+to add a person in team page 
+  {
+    name: "E",
+    role: "UX / UI Designer",
+    desc: "Designs intuitive interfaces and elevates user experience across the platform.",
+    img: "/person.png",
+    linkedin: "#",
+    email: "mailto:placeholder@example.com",
+  },
