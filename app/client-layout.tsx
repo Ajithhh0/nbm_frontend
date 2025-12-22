@@ -1,6 +1,7 @@
 "use client";
 
 import NavigationMenu from "../components/ui/navigation-menu";
+import Footer from "../components/footer";
 
 export default function ClientLayout({
   children,
@@ -20,7 +21,14 @@ export default function ClientLayout({
       <NavigationMenu />
 
       {/* PAGE CONTENT */}
-      {children}
+      <main className="relative z-10 flex flex-col min-h-screen">
+        <div className="flex-1">
+          {children}
+        </div>
+
+        {/* FOOTER */}
+        <Footer />
+      </main>
     </>
   );
 }

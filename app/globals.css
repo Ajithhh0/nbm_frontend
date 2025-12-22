@@ -160,6 +160,20 @@
   transition: height 0.15s ease-out;
 }
 
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+
 @keyframes holoMove {
   0% { transform: translateY(100%); }
   100% { transform: translateY(-100%); }
