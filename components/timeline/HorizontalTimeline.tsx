@@ -28,7 +28,7 @@ export default function HorizontalTimeline() {
 
       <div className="relative flex items-center gap-10 overflow-x-auto pb-4">
         {/* Line */}
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-white/20" />
+        <div className="absolute top-3 left-0 right-0 h-px bg-white/20" />
 
         {items.map((item, i) => (
           <motion.div
