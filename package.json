@@ -9,24 +9,29 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.1",
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.25",
+    "googleapis": "^170.1.0",
+    "json2csv": "^6.0.0-alpha.2",
     "lucide-react": "^0.555.0",
     "mongodb": "^7.0.0",
-    "mongoose": "^9.0.1",
+    "mongoose": "^9.1.4",
     "next": "16.0.6",
-    "nodemailer": "^7.0.11",
+    "nodemailer": "^7.0.12",
     "react": "19.2.0",
     "react-datepicker": "^9.1.0",
     "react-dom": "19.2.0",
     "react-markdown": "^10.1.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/json2csv": "^5.0.7",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.4",
     "@types/react": "^19",
