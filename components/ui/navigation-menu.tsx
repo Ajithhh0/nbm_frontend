@@ -14,6 +14,15 @@ const links = [
   { name: "Research", href: "/research" },
   { name: "Team", href: "/team" },
 ];
+type BellButtonProps = {
+  bellRef: React.RefObject<HTMLButtonElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  unreadCount: number;
+  news: NewsItem[];
+  handleViewAllClick: () => void;
+};
 
 type NewsItem = {
   _id: string;
@@ -130,7 +139,7 @@ export default function NavigationMenu() {
         <div className="hidden md:flex items-center gap-10">
           <div ref={navRef} className="relative flex items-center gap-2">
             <motion.div
-              className="absolute top-1/2 -translate-y-1/2 h-10 rounded-full bg-white/10"
+              className="absolute inset-y-0 rounded-full bg-white/10"
               animate={{
                 x: pill.left,
                 width: pill.width,
@@ -151,7 +160,7 @@ export default function NavigationMenu() {
                   <Link
                     href={link.href}
                     data-active={active}
-                    className={`relative z-10 px-5 py-2 text-sm font-medium ${
+                    className={`relative z-10 h-10 px-5 flex items-center text-sm font-medium ${
                       active
                         ? "text-white"
                         : "text-white/80 hover:text-white"
@@ -239,7 +248,7 @@ function BellButton({
   unreadCount,
   news,
   handleViewAllClick,
-}: any) {
+}: BellButtonProps) {
   return (
     <div className="relative">
       <button
@@ -271,7 +280,7 @@ function BellButton({
               {news.length === 0 ? (
                 <p className="text-white/50 text-sm">No news yet.</p>
               ) : (
-                news.map((item: any) => (
+                news.map((item) => (
                   <div key={item._id} className="p-2 rounded-lg bg-white/5">
                     <p className="text-white/90 text-sm">{item.title}</p>
                     <p className="text-white/40 text-xs">
