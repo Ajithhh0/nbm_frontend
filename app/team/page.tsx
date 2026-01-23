@@ -29,7 +29,7 @@ const team = [
   },
   {
     name: "Lukas",
-    role: "Machine Learning Engineer",
+    role: "PhD Student",
     img: "/team/Lukas.jpeg",
     linkedin: "https://www.linkedin.com/in/lukas-jurcaga-4b961738b/",
     email: "lj2003@hw.ac.uk",
