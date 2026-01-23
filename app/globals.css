@@ -159,6 +159,14 @@
   box-shadow: 0 0 12px rgba(0, 238, 255, 0.7);
   transition: height 0.15s ease-out;
 }
+.glass-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  color: white;
+}
+
 
 html, body {
   height: 100%;

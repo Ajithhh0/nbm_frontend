@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import nodemailer from "nodemailer";
+import { transporter } from "@/lib/mailSender";
+
 
 import { connectDB } from "@/lib/mongodb";
 import DemoRequest from "@/models/DemoRequest";
@@ -10,7 +11,8 @@ import { syncToGoogleSheets } from "@/lib/googleSheets";
 const Schema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email().max(120),
-  captchaToken: z.string().optional(), // 👈 optional for local dev
+  captchaToken: z.string(),
+  purpose: z.string().min(30).max(1000),
 });
 
 export async function POST(req: Request) {
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     //  EXTRACT ALL FIELDS HERE
-    const { name, email, captchaToken } = parsed.data;
+    const { name, email, purpose, captchaToken } = parsed.data;
 
     const ip =
       req.headers.get("x-forwarded-for") ||
@@ -68,25 +70,40 @@ export async function POST(req: Request) {
     const doc = await DemoRequest.create({ name, email, ip });
 
     //  Email notification
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
+    // const transporter = nodemailer.createTransport({
+    //   service: "gmail",
+    //   auth: {
+    //     user: process.env.GMAIL_USER,
+    //     pass: process.env.GMAIL_APP_PASSWORD,
+    //   },
+    // });
 
-    await transporter.sendMail({
-      from: `"NeuroBiomark Demo" <${process.env.GMAIL_USER}>`,
-      to: process.env.GMAIL_USER,
-      subject: "New Demo Request",
-      html: `
-        <h3>New Demo Request</h3>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>IP:</b> ${ip}</p>
-      `,
-    });
+  console.log("PURPOSE >>>", purpose);
+
+  console.log("MAIL TO =", process.env.MAIL_FROM);
+
+
+await transporter.sendMail({
+  envelope: {
+    from: process.env.MAIL_USER!,
+    to: [process.env.MAIL_FROM!],
+  },
+  from: `"NeuroBiomark - Demo Request Handler " <${process.env.MAIL_FROM}>`,
+  to: process.env.MAIL_FROM,
+  replyTo: email,
+  subject: "New Demo Request",
+  html: `
+    <h3>New Demo Request</h3>
+    <p><b>Name:</b> ${name}</p>
+    <p><b>Email:</b> ${email}</p>
+    <p><b>Purpose:</b></p>
+    <p>${purpose}</p>
+    <hr />
+    <p><small>IP: ${ip}</small></p>
+  `,
+});
+
+
 
     //  Google Sheets (non-blocking)
     syncToGoogleSheets([

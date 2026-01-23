@@ -1,19 +1,53 @@
-import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import DemoRequest from "@/models/DemoRequest";
+import { NextResponse } from "next/server";
+
+type Status = "new" | "contacted" | "responded";
 
 export async function GET(req: Request) {
-  const key = req.headers.get("x-admin-key");
-  if (key !== process.env.ADMIN_KEY) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   await connectDB();
 
-  const data = await DemoRequest.find()
+  const { searchParams } = new URL(req.url);
+
+  const page = Number(searchParams.get("page") || 1);
+  const search = (searchParams.get("search") || "").trim();
+
+  // ✅ normalize status: trim + lowercase
+  const statusRaw = (searchParams.get("status") || "").trim().toLowerCase();
+  const status = (["new", "contacted", "responded"] as const).includes(
+    statusRaw as Status
+  )
+    ? (statusRaw as Status)
+    : "";
+
+  const limit = 10;
+
+  // ✅ no any, ESLint-safe
+  const query: Record<string, unknown> = {};
+
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (status) {
+    query.status = status;
+  }
+
+  // 🔎 helpful dev log (remove later)
+  console.log("[request-demo/list] query:", query);
+
+  const total = await DemoRequest.countDocuments(query);
+  const pages = Math.max(1, Math.ceil(total / limit));
+
+  const items = await DemoRequest.find(query)
     .sort({ createdAt: -1 })
-    .limit(500)
+    .skip((page - 1) * limit)
+    .limit(limit)
     .lean();
 
-  return NextResponse.json(data);
+  // ✅ ALWAYS return the same shape
+  return NextResponse.json({ items, pages });
 }

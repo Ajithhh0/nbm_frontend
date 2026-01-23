@@ -2,20 +2,21 @@ import mongoose from "mongoose";
 
 const DemoRequestSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      minlength: 2,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      lowercase: true,
-      trim: true,
-      index: true,
-    },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
     ip: String,
+    purpose: String,
+
+    status: {
+      type: String,
+      enum: ["new", "contacted", "responded"],
+      default: "new",
+    },
+
+    notes: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
