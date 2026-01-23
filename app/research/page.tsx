@@ -421,3 +421,6 @@ function Chart({ title, data }: { title: string; data: number[] }) {
     </div>
   );
 }
+<div className="fixed bottom-2 right-2 text-xs text-red-400 z-50">
+  Commit: {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA}
+</div>
