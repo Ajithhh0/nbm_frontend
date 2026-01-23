@@ -32,12 +32,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-black bg-cover bg-center"
-      style={{
-        backgroundImage: "url(/brain-bg.png)", // optional
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center">
       {/* Glass card */}
       <form
         onSubmit={submit}

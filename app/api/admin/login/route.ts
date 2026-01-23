@@ -6,15 +6,17 @@ import { cookies } from "next/headers";
 export async function POST(req: Request) {
   const { email, password } = await req.json();
 
-  // DEBUG (optional – remove later)
-  console.log("ENV EMAIL =", process.env.ADMIN_EMAIL);
-  console.log("REQ EMAIL =", email);
-  console.log("HAS PASSWORD =", !!process.env.ADMIN_PASSWORD);
+  const inputEmail = email?.trim().toLowerCase();
+  const inputPassword = password?.trim();
 
-  if (
-    email !== process.env.ADMIN_EMAIL ||
-    password !== process.env.ADMIN_PASSWORD
-  ) {
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error("ADMIN_EMAIL or ADMIN_PASSWORD not set");
+  }
+
+  if (inputEmail !== adminEmail || inputPassword !== adminPassword) {
     return NextResponse.json(
       { error: "Invalid credentials" },
       { status: 401 }
