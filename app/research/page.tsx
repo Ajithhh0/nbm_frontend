@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { useEffect, useState, ReactNode, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Database,
@@ -23,232 +23,25 @@ const tissueImages = [
   { src: "/research/104.jpg", label: "TDP-43, BA44 – Concordant" },
 ];
 
-/* -------------------- PAGE -------------------- */
-export default function ResearchPage() {
-  const slides = [
-    { id: "overview", view: <OverviewSlide /> },
-    { id: "pipeline", view: <PipelineSlide /> },
-    { id: "charts", view: <ChartsSlide /> },
-    { id: "tissue", view: <TissueSlide /> },
-    { id: "model", view: <ModelSlide /> },
-  ];
+/* -------------------- SHARED COMPONENTS -------------------- */
 
-  const [index, setIndex] = useState(0);
-
-  const next = () => setIndex((i) => Math.min(i + 1, slides.length - 1));
-  const prev = () => setIndex((i) => Math.max(i - 1, 0));
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft") prev();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  return (
-    <div className="relative h-screen overflow-hidden">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={slides[index].id}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -40 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="absolute inset-0"
-        >
-          {slides[index].view}
-        </motion.div>
-      </AnimatePresence>
-
-      <SlideControls
-        index={index}
-        total={slides.length}
-        next={next}
-        prev={prev}
-      />
-    </div>
-  );
-}
-
-/* -------------------- CONTROLS -------------------- */
-function SlideControls({
-  index,
-  total,
-  next,
-  prev,
-}: {
-  index: number;
-  total: number;
-  next: () => void;
-  prev: () => void;
-}) {
-  return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 z-50">
-      <button
-        onClick={prev}
-        disabled={index === 0}
-        className="text-xs text-white/70 hover:text-white disabled:opacity-30"
-      >
-        ← Previous
-      </button>
-
-      <div className="flex gap-2">
-        {Array.from({ length: total }).map((_, i) => (
-          <div
-            key={i}
-            className={`h-1.5 w-6 rounded-full transition ${
-              i === index ? "bg-cyan-400" : "bg-white/30"
-            }`}
-          />
-        ))}
-      </div>
-
-      <button
-        onClick={next}
-        disabled={index === total - 1}
-        className="text-xs text-white/70 hover:text-white disabled:opacity-30"
-      >
-        Next →
-      </button>
-    </div>
-  );
-}
-
-/* -------------------- WRAPPER -------------------- */
 function SectionWrapper({ children }: { children: ReactNode }) {
   return (
     <section className="min-h-screen flex items-center justify-center px-6">
-      <div className="relative z-10 max-w-6xl w-full">{children}</div>
+      <div className="max-w-6xl w-full">{children}</div>
     </section>
   );
 }
 
-/* -------------------- SLIDES -------------------- */
-function OverviewSlide() {
+function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
-    <SectionWrapper>
-      <div className="space-y-10 text-center">
-        <h1 className="text-5xl font-bold text-white">Research Overview</h1>
-        <p className="text-white/70 max-w-2xl mx-auto">
-          End-to-end visualization of the NeuroBioMark ALS histopathology pipeline.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard title="Images" value="190" icon={<Database />} />
-          <MetricCard title="Classes" value="3" icon={<Layers />} />
-          <MetricCard title="Augmentations" value="15" icon={<FlaskConical />} />
-          <MetricCard title="CV Folds" value="5" icon={<Scan />} />
-        </div>
-      </div>
-    </SectionWrapper>
+    <div className="flex items-center gap-3 text-white text-3xl font-semibold">
+      <span className="text-cyan-400">{icon}</span>
+      {title}
+    </div>
   );
 }
 
-function PipelineSlide() {
-  return (
-    <SectionWrapper>
-      <SectionTitle icon={<Brain />} title="Research Pipeline" />
-      <ResearchPipeline />
-    </SectionWrapper>
-  );
-}
-
-function ChartsSlide() {
-  return (
-    <SectionWrapper>
-      <SectionTitle icon={<BarChart3 />} title="Model Performance" />
-      <div className="grid md:grid-cols-2 gap-8 mt-8">
-        <AnimatedLineChart title="Accuracy" data={accuracyData} />
-        <AnimatedLineChart title="Loss" data={lossData} />
-      </div>
-    </SectionWrapper>
-  );
-}
-
-/* -------------------- TISSUE SLIDE (WITH LIGHTBOX) -------------------- */
-function TissueSlide() {
-  const [active, setActive] = useState<number | null>(null);
-
-  // ESC to close
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActive(null);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  return (
-    <SectionWrapper>
-      <SectionTitle icon={<ImageIcon />} title="TDP-43 Tissue Samples" />
-
-      {/* GRID */}
-      <div className="grid sm:grid-cols-3 gap-6 mt-8">
-        {tissueImages.map((img, i) => (
-          <motion.button
-            key={img.src}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setActive(i)}
-            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden text-left"
-          >
-            <div
-              className="h-40 bg-cover bg-center"
-              style={{ backgroundImage: `url(${img.src})` }}
-            />
-            <p className="text-xs text-white/80 p-2">{img.label}</p>
-          </motion.button>
-        ))}
-      </div>
-
-      {/* MODAL */}
-      <AnimatePresence>
-        {active !== null && (
-          <motion.div
-            className="fixed inset-0 z-[200] flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setActive(null)}
-          >
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-            <motion.div
-              className="relative max-w-5xl w-[90%] rounded-2xl overflow-hidden border border-white/20 bg-white/5 backdrop-blur-xl"
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.85, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={tissueImages[active].src}
-                alt={tissueImages[active].label}
-                className="w-full max-h-[75vh] object-contain"
-              />
-              <div className="px-4 py-3 text-sm text-white/85">
-                {tissueImages[active].label}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </SectionWrapper>
-  );
-}
-
-function ModelSlide() {
-  return (
-    <SectionWrapper>
-      <SectionTitle icon={<Activity />} title="Model & Explainability" />
-      <ModelPipelineViz />
-    </SectionWrapper>
-  );
-}
-
-/* -------------------- COMPONENTS -------------------- */
 function MetricCard({
   title,
   value,
@@ -269,15 +62,41 @@ function MetricCard({
   );
 }
 
-function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
+/* -------------------- SLIDES -------------------- */
+
+function OverviewSlide() {
   return (
-    <div className="flex items-center gap-3 text-white text-3xl font-semibold">
-      <span className="text-cyan-400">{icon}</span>
-      {title}
-    </div>
+    <SectionWrapper>
+      <div className="space-y-10 text-center">
+        <h1 className="text-5xl font-bold text-white">Research Overview</h1>
+        <p className="text-white/70 max-w-2xl mx-auto">
+          End-to-end visualization of the NeuroBiomark ALS histopathology pipeline.
+        </p>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard title="Images" value="190" icon={<Database />} />
+          <MetricCard title="Classes" value="3" icon={<Layers />} />
+          <MetricCard title="Augmentations" value="15" icon={<FlaskConical />} />
+          <MetricCard title="CV Folds" value="5" icon={<Scan />} />
+        </div>
+      </div>
+    </SectionWrapper>
   );
 }
 
+function PipelineSlide() {
+  return (
+    <SectionWrapper>
+      <div className="w-full max-w-5xl mx-auto">
+        <SectionTitle icon={<Brain />} title="Research Pipeline" />
+
+        <div className="mt-20">
+          <ResearchPipeline />
+        </div>
+      </div>
+    </SectionWrapper>
+  );
+}
 function ResearchPipeline() {
   const steps = [
     "Dataset",
@@ -289,22 +108,44 @@ function ResearchPipeline() {
   ];
 
   return (
-    <div className="relative mt-14">
+    <div className="relative">
+      {/* line */}
       <div className="absolute top-6 left-0 right-0 h-px bg-white/20" />
+
+      {/* animated dot */}
       <motion.div
-        className="absolute top-[22px] h-3 w-3 rounded-full bg-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.9)]"
+        className="absolute top-[18px] h-3 w-3 rounded-full bg-cyan-400
+                   shadow-[0_0_14px_rgba(34,211,238,0.9)]"
         initial={{ left: "0%" }}
         animate={{ left: "100%" }}
         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
       />
 
-      <div className="relative flex justify-between">
+      {/* steps */}
+      <div
+        className="
+          relative
+          grid
+          grid-cols-6
+          gap-8
+          text-center
+        "
+      >
         {steps.map((step, i) => (
           <div key={step} className="flex flex-col items-center gap-3">
-            <div className="h-12 w-12 rounded-full border border-cyan-400 bg-white/10 backdrop-blur-xl flex items-center justify-center text-white">
+            <div
+              className="
+                h-12 w-12
+                rounded-full
+                border border-cyan-400
+                bg-white/10 backdrop-blur-xl
+                flex items-center justify-center
+                text-white text-sm
+              "
+            >
               {i + 1}
             </div>
-            <p className="text-xs text-white/80 text-center">{step}</p>
+            <p className="text-xs text-white/80">{step}</p>
           </div>
         ))}
       </div>
@@ -312,7 +153,21 @@ function ResearchPipeline() {
   );
 }
 
-function AnimatedLineChart({
+
+
+function ChartsSlide() {
+  return (
+    <SectionWrapper>
+      <SectionTitle icon={<BarChart3 />} title="Model Performance" />
+
+      <div className="grid md:grid-cols-2 gap-8 mt-10">
+        <LineChart title="Accuracy" data={accuracyData} />
+        <LineChart title="Loss" data={lossData} />
+      </div>
+    </SectionWrapper>
+  );
+}
+function LineChart({
   title,
   data,
 }: {
@@ -322,49 +177,247 @@ function AnimatedLineChart({
   const max = Math.max(...data);
   const min = Math.min(...data);
 
+  // Convert data → SVG points
   const points = data.map((v, i) => {
     const x = (i / (data.length - 1)) * 100;
-    const y = 100 - ((v - min) / (max - min)) * 80 - 10;
+    const y = 100 - ((v - min) / (max - min)) * 70 - 15;
     return `${x},${y}`;
   });
 
   return (
     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-4">
-      <h3 className="text-sm text-white mb-2">{title}</h3>
+      <h3 className="text-sm text-white mb-3">{title}</h3>
+
       <svg viewBox="0 0 100 100" className="w-full h-40">
+        {/* grid */}
+        <line x1="0" y1="90" x2="100" y2="90" stroke="rgba(255,255,255,0.1)" />
+        <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(255,255,255,0.1)" />
+
+        {/* animated line */}
         <motion.polyline
           points={points.join(" ")}
           fill="none"
           stroke="rgb(34,211,238)"
-          strokeWidth="1.5"
+          strokeWidth="2"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
-          transition={{ duration: 1.2 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
         />
+
+        {/* dots */}
+        {points.map((p, i) => {
+          const [x, y] = p.split(",");
+          return (
+            <circle
+              key={i}
+              cx={x}
+              cy={y}
+              r="1.8"
+              fill="rgb(34,211,238)"
+            />
+          );
+        })}
       </svg>
     </div>
   );
 }
 
+
+
+// function TissueSlide() {
+//   return (
+//     <SectionWrapper>
+//       <SectionTitle icon={<ImageIcon />} title="TDP-43 Tissue Samples" />
+//       <div className="grid sm:grid-cols-3 gap-6 mt-10">
+//         {tissueImages.map((img) => (
+//           <div
+//             key={img.src}
+//             className="border border-white/20 rounded-xl overflow-hidden bg-white/10"
+//           >
+//             <img src={img.src} alt={img.label} />
+//             <p className="text-xs text-white/70 p-2">{img.label}</p>
+//           </div>
+//         ))}
+//       </div>
+//     </SectionWrapper>
+//   );
+// }
+
+function ModelSlide() {
+  return (
+    <SectionWrapper>
+      <div className="w-full max-w-5xl mx-auto">
+        <SectionTitle icon={<Activity />} title="Model & Explainability" />
+
+        <div className="mt-20">
+          <ModelPipelineViz />
+        </div>
+      </div>
+    </SectionWrapper>
+  );
+}
+
 function ModelPipelineViz() {
   const stages = [
-    "Input Tile",
-    "Feature Extractor",
+    "Input Tiles",
+    "CNN Backbone",
     "Attention",
     "Classifier",
-    "Output",
+    "Prediction",
   ];
 
   return (
-    <div className="flex justify-between mt-10">
-      {stages.map((s) => (
+    <div className="relative">
+      {/* connection line */}
+      <div className="absolute top-8 left-0 right-0 h-px bg-white/20" />
+
+      <div className="grid grid-cols-5 gap-8 text-center">
+        {stages.map((stage) => (
+          <div
+            key={stage}
+            className="flex flex-col items-center gap-4"
+          >
+            <div
+              className="
+                w-28 h-14
+                rounded-xl
+                border border-cyan-400
+                bg-white/10 backdrop-blur-xl
+                flex items-center justify-center
+                text-xs text-white
+              "
+            >
+              {stage}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* explainability callout */}
+      <div className="mt-16 flex justify-center">
         <div
-          key={s}
-          className="w-32 h-16 border border-cyan-400 bg-white/10 backdrop-blur-xl rounded-xl flex items-center justify-center text-xs text-white"
+          className="
+            px-6 py-3
+            rounded-xl
+            border border-cyan-400
+            bg-cyan-400/10
+            text-cyan-300
+            text-sm
+          "
         >
-          {s}
+          Explainability via Grad-CAM / Attention Maps
         </div>
-      ))}
+      </div>
+    </div>
+  );
+}
+
+
+/* -------------------- PAGE -------------------- */
+
+export default function ResearchPage() {
+ const slides = [
+  <OverviewSlide key="overview" />,
+  <PipelineSlide key="pipeline" />,
+  <ChartsSlide key="charts" />,
+  //<TissueSlide key="tissue" />,
+  <ModelSlide key="model" />,
+];
+
+
+  const [index, setIndex] = useState(0);
+
+  const next = useCallback(
+    () => setIndex((i) => Math.min(i + 1, slides.length - 1)),
+    [slides.length]
+  );
+
+  const prev = useCallback(
+    () => setIndex((i) => Math.max(i - 1, 0)),
+    []
+  );
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [next, prev]);
+
+  return (
+    <div className="relative min-h-screen pb-32">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ duration: 0.6 }}
+        >
+          {slides[index]}
+        </motion.div>
+      </AnimatePresence>
+
+      <SlideControls
+        index={index}
+        total={slides.length}
+        next={next}
+        prev={prev}
+      />
+    </div>
+  );
+}
+
+/* -------------------- CONTROLS -------------------- */
+
+function SlideControls({
+  index,
+  total,
+  next,
+  prev,
+}: {
+  index: number;
+  total: number;
+  next: () => void;
+  prev: () => void;
+}) {
+  return (
+    <div className="sticky bottom-6 mt-16 flex justify-center items-center gap-6">
+      <button onClick={prev} disabled={index === 0} className="text-white/70">
+        ← Previous
+      </button>
+
+      <div className="flex gap-2">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-1.5 w-6 rounded-full ${
+              i === index ? "bg-cyan-400" : "bg-white/30"
+            }`}
+          />
+        ))}
+      </div>
+
+      <button
+        onClick={next}
+        disabled={index === total - 1}
+        className="text-white/70"
+      >
+        Next →
+      </button>
+    </div>
+  );
+}
+
+/* -------------------- SIMPLE CHART -------------------- */
+
+function Chart({ title, data }: { title: string; data: number[] }) {
+  return (
+    <div className="bg-white/10 border border-white/20 rounded-xl p-4">
+      <h3 className="text-white text-sm mb-3">{title}</h3>
+      <div className="h-32 bg-black/30 rounded" />
     </div>
   );
 }
