@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "NeuroBioMark",
   description: "",
+  icons: [
+    {
+      url: "/icon.png",
+      type: "image/png",
+      sizes: "1024x1024",},
+  ],
 };
 
 export default function RootLayout({

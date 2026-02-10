@@ -127,9 +127,9 @@ export default function NavigationMenu() {
         {/* LOGO */}
         <Link href="/" className="flex items-center">
           <Image
-            src="/NBMLogoNobg_cropped.png"
-            alt="NBM Logo"
-            width={95}
+            src="/nbmnewlogo_nobg.png"
+            alt="NBM"
+            width={250}
             height={50}
             className="object-contain"
           />
